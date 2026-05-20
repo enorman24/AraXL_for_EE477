@@ -25,7 +25,8 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
     // AXI Resp Delay [ps] for gate-level simulation
     parameter  int           unsigned AxiRespDelay = 200,
     // Main memory
-    parameter  int           unsigned L2NumWords   = 2**20,
+    // Shrunk from 2**20 to 1024 for bsg_fakeram bring-up: 32 KiB at AxiDataWidth=256.
+    parameter  int           unsigned L2NumWords   = 1024,
     // Dependant parameters. DO NOT CHANGE!
     localparam type                   axi_data_t   = logic [AxiDataWidth-1:0],
     localparam type                   axi_strb_t   = logic [AxiDataWidth/8-1:0],
@@ -243,21 +244,18 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   );
 
 `ifndef SPYGLASS
-  tc_sram #(
-    .NumWords (L2NumWords  ),
-    .NumPorts (1           ),
-    .DataWidth(AxiDataWidth),
-    .SimInit("random"),
-    .Latency(1)
+  bsg_mem_1rw_sync_mask_write_byte #(
+    .els_p        (L2NumWords  ),
+    .data_width_p (AxiDataWidth)
   ) i_dram (
-    .clk_i  (clk_i                                                                      ),
-    .rst_ni (rst_ni                                                                     ),
-    .req_i  (l2_req                                                                     ),
-    .we_i   (l2_we                                                                      ),
-    .addr_i (l2_addr[$clog2(L2NumWords)-1+$clog2(AxiDataWidth/8):$clog2(AxiDataWidth/8)]),
-    .wdata_i(l2_wdata                                                                   ),
-    .be_i   (l2_be                                                                      ),
-    .rdata_o(l2_rdata                                                                   )
+    .clk_i        (clk_i                                                                      ),
+    .reset_i      (~rst_ni                                                                    ),
+    .v_i          (l2_req                                                                     ),
+    .w_i          (l2_we                                                                      ),
+    .addr_i       (l2_addr[$clog2(L2NumWords)-1+$clog2(AxiDataWidth/8):$clog2(AxiDataWidth/8)]),
+    .data_i       (l2_wdata                                                                   ),
+    .write_mask_i (l2_be                                                                      ),
+    .data_o       (l2_rdata                                                                   )
   );
 `else
   assign l2_rdata = '0;

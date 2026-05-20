@@ -472,6 +472,9 @@ package ara_pkg;
    */
 
   function automatic vlen_t shuffle_index(vlen_t byte_idx, int NrLanes, rvv_pkg::vew_e ew);
+    int unsigned byte_idx_u;
+    byte_idx_u = int'(byte_idx);
+
     // Generate the shuffling of the table above
     unique case (NrLanes)
       1: unique case (ew)
@@ -479,31 +482,31 @@ package ara_pkg;
             automatic vlen_t [7:0] idx;
             idx[7] = 7; idx[6] = 6; idx[5] = 5; idx[4] = 4;
             idx[3] = 3; idx[2] = 2; idx[1] = 1; idx[0] = 0;
-            return idx[byte_idx[2:0]];
+            return idx[byte_idx_u % 8];
           end
           rvv_pkg::EW32: begin
             automatic vlen_t [7:0] idx;
             idx[7] = 7; idx[6] = 6; idx[5] = 5; idx[4] = 4;
             idx[3] = 3; idx[2] = 2; idx[1] = 1; idx[0] = 0;
-            return idx[byte_idx[2:0]];
+            return idx[byte_idx_u % 8];
           end
           rvv_pkg::EW16: begin
             automatic vlen_t [7:0] idx;
             idx[7] = 7; idx[6] = 6; idx[5] = 3; idx[4] = 2;
             idx[3] = 5; idx[2] = 4; idx[1] = 1; idx[0] = 0;
-            return idx[byte_idx[2:0]];
+            return idx[byte_idx_u % 8];
           end
           rvv_pkg::EW8: begin
             automatic vlen_t [7:0] idx;
             idx[7] = 7; idx[6] = 3; idx[5] = 5; idx[4] = 1;
             idx[3] = 6; idx[2] = 2; idx[1] = 4; idx[0] = 0;
-            return idx[byte_idx[2:0]];
+            return idx[byte_idx_u % 8];
           end
           default: begin
             automatic vlen_t [7:0] idx;
             idx[7] = 7; idx[6] = 6; idx[5] = 5; idx[4] = 4;
             idx[3] = 3; idx[2] = 2; idx[1] = 1; idx[0] = 0;
-            return idx[byte_idx[2:0]];
+            return idx[byte_idx_u % 8];
           end
         endcase
       2: unique case (ew)
@@ -513,7 +516,7 @@ package ara_pkg;
             idx[11] = 11; idx[10] = 10; idx[09] = 09; idx[08] = 08;
             idx[07] = 07; idx[06] = 06; idx[05] = 05; idx[04] = 04;
             idx[03] = 03; idx[02] = 02; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[3:0]];
+            return idx[byte_idx_u % 16];
           end
           rvv_pkg::EW32: begin
             automatic vlen_t [15:0] idx;
@@ -521,7 +524,7 @@ package ara_pkg;
             idx[11] = 07; idx[10] = 06; idx[09] = 05; idx[08] = 04;
             idx[07] = 11; idx[06] = 10; idx[05] = 09; idx[04] = 08;
             idx[03] = 03; idx[02] = 02; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[3:0]];
+            return idx[byte_idx_u % 16];
           end
           rvv_pkg::EW16: begin
             automatic vlen_t [15:0] idx;
@@ -529,7 +532,7 @@ package ara_pkg;
             idx[11] = 11; idx[10] = 10; idx[09] = 03; idx[08] = 02;
             idx[07] = 13; idx[06] = 12; idx[05] = 05; idx[04] = 04;
             idx[03] = 09; idx[02] = 08; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[3:0]];
+            return idx[byte_idx_u % 16];
           end
           rvv_pkg::EW8: begin
             automatic vlen_t [15:0] idx;
@@ -537,7 +540,7 @@ package ara_pkg;
             idx[11] = 13; idx[10] = 05; idx[09] = 09; idx[08] = 01;
             idx[07] = 14; idx[06] = 06; idx[05] = 10; idx[04] = 02;
             idx[03] = 12; idx[02] = 04; idx[01] = 08; idx[00] = 00;
-            return idx[byte_idx[3:0]];
+            return idx[byte_idx_u % 16];
           end
           default: begin
             automatic vlen_t [15:0] idx;
@@ -545,7 +548,7 @@ package ara_pkg;
             idx[11] = 11; idx[10] = 10; idx[09] = 09; idx[08] = 08;
             idx[07] = 07; idx[06] = 06; idx[05] = 05; idx[04] = 04;
             idx[03] = 03; idx[02] = 02; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[3:0]];
+            return idx[byte_idx_u % 16];
           end
         endcase
       4: unique case (ew)
@@ -559,7 +562,7 @@ package ara_pkg;
             idx[11] = 11; idx[10] = 10; idx[09] = 09; idx[08] = 08;
             idx[07] = 07; idx[06] = 06; idx[05] = 05; idx[04] = 04;
             idx[03] = 03; idx[02] = 02; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[4:0]];
+            return idx[byte_idx_u % 32];
           end
           rvv_pkg::EW32: begin
             automatic vlen_t [31:0] idx;
@@ -571,7 +574,7 @@ package ara_pkg;
             idx[11] = 19; idx[10] = 18; idx[09] = 17; idx[08] = 16;
             idx[07] = 11; idx[06] = 10; idx[05] = 09; idx[04] = 08;
             idx[03] = 03; idx[02] = 02; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[4:0]];
+            return idx[byte_idx_u % 32];
           end
           rvv_pkg::EW16: begin
             automatic vlen_t [31:0] idx;
@@ -583,7 +586,7 @@ package ara_pkg;
             idx[11] = 13; idx[10] = 12; idx[09] = 05; idx[08] = 04;
             idx[07] = 25; idx[06] = 24; idx[05] = 17; idx[04] = 16;
             idx[03] = 09; idx[02] = 08; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[4:0]];
+            return idx[byte_idx_u % 32];
           end
           rvv_pkg::EW8: begin
             automatic vlen_t [31:0] idx;
@@ -595,7 +598,7 @@ package ara_pkg;
             idx[11] = 26; idx[10] = 18; idx[09] = 10; idx[08] = 02;
             idx[07] = 28; idx[06] = 20; idx[05] = 12; idx[04] = 04;
             idx[03] = 24; idx[02] = 16; idx[01] = 08; idx[00] = 00;
-            return idx[byte_idx[4:0]];
+            return idx[byte_idx_u % 32];
           end
           default: begin
             automatic vlen_t [31:0] idx;
@@ -607,7 +610,7 @@ package ara_pkg;
             idx[11] = 11; idx[10] = 10; idx[09] = 09; idx[08] = 08;
             idx[07] = 07; idx[06] = 06; idx[05] = 05; idx[04] = 04;
             idx[03] = 03; idx[02] = 02; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[4:0]];
+            return idx[byte_idx_u % 32];
           end
         endcase
       8: unique case (ew)
@@ -629,7 +632,7 @@ package ara_pkg;
             idx[11] = 11; idx[10] = 10; idx[09] = 09; idx[08] = 08;
             idx[07] = 07; idx[06] = 06; idx[05] = 05; idx[04] = 04;
             idx[03] = 03; idx[02] = 02; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[5:0]];
+            return idx[byte_idx_u % 64];
           end
           rvv_pkg::EW32: begin
             automatic vlen_t [63:0] idx;
@@ -649,7 +652,7 @@ package ara_pkg;
             idx[11] = 19; idx[10] = 18; idx[09] = 17; idx[08] = 16;
             idx[07] = 11; idx[06] = 10; idx[05] = 09; idx[04] = 08;
             idx[03] = 03; idx[02] = 02; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[5:0]];
+            return idx[byte_idx_u % 64];
           end
           rvv_pkg::EW16: begin
             automatic vlen_t [63:0] idx;
@@ -669,7 +672,7 @@ package ara_pkg;
             idx[11] = 41; idx[10] = 40; idx[09] = 33; idx[08] = 32;
             idx[07] = 25; idx[06] = 24; idx[05] = 17; idx[04] = 16;
             idx[03] = 09; idx[02] = 08; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[5:0]];
+            return idx[byte_idx_u % 64];
           end
           rvv_pkg::EW8: begin
             automatic vlen_t [63:0] idx;
@@ -689,7 +692,7 @@ package ara_pkg;
             idx[11] = 28; idx[10] = 20; idx[09] = 12; idx[08] = 04;
             idx[07] = 56; idx[06] = 48; idx[05] = 40; idx[04] = 32;
             idx[03] = 24; idx[02] = 16; idx[01] = 08; idx[00] = 00;
-            return idx[byte_idx[5:0]];
+            return idx[byte_idx_u % 64];
           end
           default: begin
             automatic vlen_t [63:0] idx;
@@ -709,7 +712,7 @@ package ara_pkg;
             idx[11] = 11; idx[10] = 10; idx[09] = 09; idx[08] = 08;
             idx[07] = 07; idx[06] = 06; idx[05] = 05; idx[04] = 04;
             idx[03] = 03; idx[02] = 02; idx[01] = 01; idx[00] = 00;
-            return idx[byte_idx[5:0]];
+            return idx[byte_idx_u % 64];
           end
         endcase
       16: unique case (ew)
@@ -747,7 +750,7 @@ package ara_pkg;
             idx[011] = 011; idx[010] = 010; idx[009] = 009; idx[008] = 008;
             idx[007] = 007; idx[006] = 006; idx[005] = 005; idx[004] = 004;
             idx[003] = 003; idx[002] = 002; idx[001] = 001; idx[000] = 000;
-            return idx[byte_idx[6:0]];
+            return idx[byte_idx_u % 128];
           end
           rvv_pkg::EW32: begin
             automatic vlen_t [127:0] idx;
@@ -783,7 +786,7 @@ package ara_pkg;
             idx[011] = 019; idx[010] = 018; idx[009] = 017; idx[008] = 016;
             idx[007] = 011; idx[006] = 010; idx[005] = 009; idx[004] = 008;
             idx[003] = 003; idx[002] = 002; idx[001] = 001; idx[000] = 000;
-            return idx[byte_idx[6:0]];
+            return idx[byte_idx_u % 128];
           end
           rvv_pkg::EW16: begin
             automatic vlen_t [127:0] idx;
@@ -819,7 +822,7 @@ package ara_pkg;
             idx[011] = 041; idx[010] = 040; idx[009] = 033; idx[008] = 032;
             idx[007] = 025; idx[006] = 024; idx[005] = 017; idx[004] = 016;
             idx[003] = 009; idx[002] = 008; idx[001] = 001; idx[000] = 000;
-            return idx[byte_idx[6:0]];
+            return idx[byte_idx_u % 128];
           end
           rvv_pkg::EW8: begin
             automatic vlen_t [127:0] idx;
@@ -855,7 +858,7 @@ package ara_pkg;
             idx[011] = 088; idx[010] = 080; idx[009] = 072; idx[008] = 064;
             idx[007] = 056; idx[006] = 048; idx[005] = 040; idx[004] = 032;
             idx[003] = 024; idx[002] = 016; idx[001] = 008; idx[000] = 000;
-            return idx[byte_idx[6:0]];
+            return idx[byte_idx_u % 128];
           end
           default: begin
             automatic vlen_t [127:0] idx;
@@ -891,7 +894,7 @@ package ara_pkg;
             idx[011] = 011; idx[010] = 010; idx[009] = 009; idx[008] = 008;
             idx[007] = 007; idx[006] = 006; idx[005] = 005; idx[004] = 004;
             idx[003] = 003; idx[002] = 002; idx[001] = 001; idx[000] = 000;
-            return idx[byte_idx[6:0]];
+            return idx[byte_idx_u % 128];
           end
         endcase
       default: $error("Error. Supported number of lanes are 1, 2, 4, 8, 16.");
@@ -927,6 +930,8 @@ package ara_pkg;
   // The offsets below work for Cluster Axi bandwidth of 16*N, 32*N, 64*N.
   function automatic vlen_t shuffle_offset(vlen_t vrf_idx, int NrLanes, rvv_pkg::vew_e ew);
     vlen_t pnt_idx = vrf_idx >> $clog2(2*NrLanes);  // Dividing by 16N bits
+    int unsigned pnt_idx_u;
+    pnt_idx_u = int'(pnt_idx);
     unique case (ew)
       rvv_pkg::EW64: begin
         automatic vlen_t [3:0] off;
@@ -934,31 +939,31 @@ package ara_pkg;
         off[1] = 2 << $clog2(NrLanes); // From 16*N bits onwards use this offset
         off[2] = 4 << $clog2(NrLanes); // From 32*N bits onwards use this offset
         off[3] = 6 << $clog2(NrLanes); // From 48*N bits onwards use this offset
-        return off[pnt_idx[1:0]];
+        return off[pnt_idx_u % 4];
       end
-      rvv_pkg::EW32: begin 
+      rvv_pkg::EW32: begin
         automatic vlen_t [3:0] off;
         off[0] = 0;
         off[1] = NrLanes==1 ? 2 : 4 << $clog2(NrLanes);
-        off[2] = 4; 
+        off[2] = 4;
         off[3] = off[0] + off[1];
-        return off[pnt_idx[1:0]];
+        return off[pnt_idx_u % 4];
       end
-      rvv_pkg::EW16: begin 
+      rvv_pkg::EW16: begin
         automatic vlen_t [3:0] off;
         off[0] = 0;
         off[1] = 4;
         off[2] = 2;
         off[3] = 6;
-        return off[pnt_idx[1:0]];
+        return off[pnt_idx_u % 4];
       end
-      rvv_pkg::EW8: begin 
+      rvv_pkg::EW8: begin
         automatic vlen_t [3:0] off;
         off[0] = 0;
         off[1] = 2;
         off[2] = 1;
         off[3] = 3;
-        return off[pnt_idx[1:0]];
+        return off[pnt_idx_u % 4];
       end
     endcase // ew
   endfunction : shuffle_offset
@@ -966,42 +971,44 @@ package ara_pkg;
 
   function automatic vlen_t deshuffle_index(vlen_t byte_index, int NrLanes, rvv_pkg::vew_e ew);
     // Generate the deshuffling of the table above
+    int unsigned byte_index_u;
+    byte_index_u = int'(byte_index);
     unique case (NrLanes)
       1: begin
         automatic vlen_t [7:0] index;
         for (int b = 0; b < 8; b++)
           index[shuffle_index(b, NrLanes, ew)] = b;
-        return index[byte_index[2:0]];
+        return index[byte_index_u % 8];
       end
       2: begin
         automatic vlen_t [15:0] index;
         for (int b = 0; b < 16; b++)
           index[shuffle_index(b, NrLanes, ew)] = b;
-        return index[byte_index[3:0]];
+        return index[byte_index_u % 16];
       end
       4: begin
         automatic vlen_t [31:0] index;
         for (int b = 0; b < 32; b++)
           index[shuffle_index(b, NrLanes, ew)] = b;
-        return index[byte_index[4:0]];
+        return index[byte_index_u % 32];
       end
       8: begin
         automatic vlen_t [63:0] index;
         for (int b = 0; b < 64; b++)
           index[shuffle_index(b, NrLanes, ew)] = b;
-        return index[byte_index[5:0]];
+        return index[byte_index_u % 64];
       end
       16: begin
         automatic vlen_t [127:0] index;
         for (int b = 0; b < 128; b++)
           index[shuffle_index(b, NrLanes, ew)] = b;
-        return index[byte_index[6:0]];
+        return index[byte_index_u % 128];
       end
       default: begin
         automatic vlen_t [31:0] index;
         for (int b = 0; b < 32; b++)
           index[shuffle_index(b, NrLanes, ew)] = b;
-        return index[byte_index[4:0]];
+        return index[byte_index_u % 32];
       end
     endcase
   endfunction : deshuffle_index

@@ -394,7 +394,7 @@ module masku import ara_pkg::*; import rvv_pkg::*; #(
           for (int lane=0; lane < NrLanes; lane++) begin
             automatic int nelements = vinsn_issue.vl >> $clog2(NrLanes);
             automatic logic[DataWidth-1:0] bit_enable_lane = '0; 
-            if (lane < vinsn_issue.vl[$clog2(NrLanes)-1:0]) begin
+            if (lane < (vinsn_issue.vl % NrLanes)) begin
               nelements += 1;
             end
             bit_enable_lane[nelements] = 1'b1;
@@ -760,11 +760,11 @@ module masku import ara_pkg::*; import rvv_pkg::*; #(
     result_scalar_valid_d = result_scalar_valid_o;
 
     // Balance the incoming valid
-    unbalanced_a = (|commit_cnt_q[idx_width(NrLanes)-1:0] != 1'b0) ? 1'b1 : 1'b0;
+    unbalanced_a = ((commit_cnt_q % NrLanes) != 0) ? 1'b1 : 1'b0;
     last_incoming_a = ((commit_cnt_q - vrf_pnt_q) < NrLanes) ? 1'b1 : 1'b0;
     fake_a_valid[0] = 1'b0;
     for (int unsigned i = 1; i < NrLanes; i++)
-      if (i >= {1'b0, commit_cnt_q[idx_width(NrLanes)-1:0]})
+      if (i >= (commit_cnt_q % NrLanes))
         fake_a_valid[i] = last_incoming_a & unbalanced_a;
       else
         fake_a_valid = 1'b0;
@@ -927,7 +927,7 @@ module masku import ara_pkg::*; import rvv_pkg::*; #(
           for (int unsigned lane = 0; lane < NrLanes; lane++) begin
             // How many elements are we committing in this lane?
             automatic int element_cnt = element_cnt_all_lanes / NrLanes;
-            if (lane < element_cnt_all_lanes[idx_width(NrLanes)-1:0])
+            if (lane < (element_cnt_all_lanes % NrLanes))
               element_cnt += 1;
 
             result_queue_d[result_queue_write_pnt_q][lane] = '{

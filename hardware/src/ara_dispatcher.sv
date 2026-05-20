@@ -2624,9 +2624,10 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
                   5'b00000:;      // Unit-strided
                   5'b01000:;      // Unit-strided, whole registers
                   5'b01011: begin // Unit-strided, mask load, EEW=1
-                    // We operate ceil(vl/8) bytes
-                    ara_req_d.vl         = (vl_q >> 3) + |vl_q[2:0];
-                    ara_req_d.vl_cluster = (vl_cluster_q >> 3) + |vl_cluster_q[2:0];
+                    // We operate ceil(vl/8) bytes: (vl + 7) >> 3 (not (vl>>3)+|vl[2:0],
+                    // which old Genus rejects as reversed part-select on vlen_t)
+                    ara_req_d.vl         = (vl_q + vlen_t'(7)) >> 3;
+                    ara_req_d.vl_cluster = (vl_cluster_q + vlen_cluster_t'(7)) >> 3;
                     ara_req_d.vtype.vsew = EW8;
                     ara_req_d.use_eew1   = 1'b1;
                   end
@@ -2840,9 +2841,9 @@ module ara_dispatcher import ara_pkg::*; import rvv_pkg::*; #(
                   5'b00000:;     // Unit-strided
                   5'b01000:;     // Unit-strided, whole registers
                   5'b01011: begin // Unit-strided, mask store, EEW=1
-                    // We operate ceil(vl/8) bytes
-                    ara_req_d.vl         = (vl_q >> 3) + |vl_q[2:0];
-                    ara_req_d.vl_cluster = (vl_cluster_q >> 3) + |vl_cluster_q[2:0];
+                    // We operate ceil(vl/8) bytes: (vl + 7) >> 3
+                    ara_req_d.vl         = (vl_q + vlen_t'(7)) >> 3;
+                    ara_req_d.vl_cluster = (vl_cluster_q + vlen_cluster_t'(7)) >> 3;
                     ara_req_d.vtype.vsew = EW8;
                     ara_req_d.use_eew1   = 1'b1;
                   end
