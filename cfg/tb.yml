@@ -1,0 +1,22 @@
+# tb.yml - Simulation Testbench Configuration
+
+# List of Verilog testbenches (or other sources) needed for simulations.
+sim.inputs.tb_input_files: []
+sim.inputs.tb_input_files_meta: [subst]
+
+# Toplevel simulation module name
+sim.inputs.tb_name: "bsg_double_trouble_pcb"
+sim.inputs.dut_path: "bsg_double_trouble_pcb.asic.ASIC"
+
+# Search directories for `include directives in simulations
+sim.inputs.tb_incdir: []
+sim.inputs.tb_incdir_meta: [subst]
+
+# Macro definitions for simulations
+sim.inputs.tb_defines: []
+sim.inputs.tb_defines_meta: [subst]
+
+# List of trace files for the simulation
+sim.inputs.trace_files: []
+sim.inputs.trace_files_meta: [subst]
+
