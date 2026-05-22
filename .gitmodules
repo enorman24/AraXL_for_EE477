@@ -24,3 +24,6 @@
 	path = apps/riscv-vectorized-benchmark-suite
 	url = https://github.com/Navaneeth-KunhiPurayil/riscv-vectorized-benchmark-suite.git
 	branch = araxl/baremetal
+[submodule "hardware/deps/verilog-pcie"]
+	path = hardware/deps/verilog-pcie
+	url = https://github.com/alexforencich/verilog-pcie.git
