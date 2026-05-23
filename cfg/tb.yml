@@ -1,22 +1,45 @@
-# tb.yml - Simulation Testbench Configuration
+# tb.yml - Simulation Testbench Configuration (AraXL)
 
-# List of Verilog testbenches (or other sources) needed for simulations.
-sim.inputs.tb_input_files: []
+# Testbench files and DPI ELF loader.
+sim.inputs.tb_input_files: [
+  "${araxl_root}/hardware/tb/ara_testharness.sv",
+  "${araxl_root}/hardware/tb/ara_tb.sv",
+  "${araxl_root}/hardware/tb/dpi/elfloader.cc",
+]
 sim.inputs.tb_input_files_meta: [subst]
 
-# Toplevel simulation module name
-sim.inputs.tb_name: "bsg_double_trouble_pcb"
-sim.inputs.dut_path: "bsg_double_trouble_pcb.asic.ASIC"
+# Toplevel simulation module name.
+sim.inputs.tb_name: "ara_tb"
+# Used by vcs-mk to generate CDC noTiming list in syn/par simulations.
+sim.inputs.dut_path: "ara_tb.dut.i_ara_soc"
 
-# Search directories for `include directives in simulations
-sim.inputs.tb_incdir: []
+# Search directories for `include directives in simulations.
+sim.inputs.tb_incdir: [
+  "${araxl_root}/hardware/tb/dpi",
+  "${araxl_root}/toolchain/riscv-isa-sim",
+]
 sim.inputs.tb_incdir_meta: [subst]
 
-# Macro definitions for simulations
-sim.inputs.tb_defines: []
+# Geometry must match ara_soc_syn wrapper (NrLanes=4, NrClusters=2).
+sim.inputs.tb_defines: [
+  "NR_LANES=4",
+  "NR_CLUSTERS=2",
+]
 sim.inputs.tb_defines_meta: [subst]
 
-# List of trace files for the simulation
+# Save runtime plusargs into simv executable.
+sim.inputs.execution_flags: [
+  "+PRELOAD=${araxl_root}/apps/bin/fdotproduct",
+]
+sim.inputs.execution_flags_meta: [subst]
+
+# DPI ELF loader dependencies.
+sim.inputs.compiler_cc_opts: [
+  "-I${araxl_root}/toolchain/riscv-isa-sim",
+]
+sim.inputs.compiler_cc_opts_meta: [subst]
+
+# No BSG trace ROM inputs in AraXL flow.
 sim.inputs.trace_files: []
 sim.inputs.trace_files_meta: [subst]
 
