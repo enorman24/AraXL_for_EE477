@@ -26,7 +26,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
     parameter  int           unsigned AxiRespDelay = 200,
     // Main memory
     // Shrunk from 2**20 to 1024 for bsg_fakeram bring-up: 32 KiB at AxiDataWidth=256.
-    parameter  int           unsigned L2NumWords   = 1024,
+    parameter  int           unsigned L2NumWords   = 1024, // CHANGED THIS TO ALLOW RAM TO BE ON CHIP
     // Dependant parameters. DO NOT CHANGE!
     localparam type                   axi_data_t   = logic [AxiDataWidth-1:0],
     localparam type                   axi_strb_t   = logic [AxiDataWidth/8-1:0],

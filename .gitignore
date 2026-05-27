@@ -1,2 +1,21 @@
 .bender/
-.venvs/
+.venv/
+
+# Build artifacts
+*.o
+*.o.spike
+*.d
+*.dump
+
+# Local dependencies & toolchain installs
+hardware/deps/
+install/
+
+# Cloned tests & run outputs
+apps/riscv-tests/
+apps/spike_runs/
+logs/
+
+# Generated file lists
+ara_files.f
+ara_incdirs.f
