@@ -350,7 +350,7 @@ module operand_requester import ara_pkg::*; import rvv_pkg::*; #(
 
           if (operand_queue_ready_i[requester]) begin
             // Bank we are currently requesting
-            automatic int bank = requester_q.addr[idx_width(NrBanks)-1:0];
+            automatic int bank = requester_q.addr % NrBanks;
 
             // Operand request
             operand_req[bank][requester] = !stall;
@@ -490,15 +490,15 @@ module operand_requester import ara_pkg::*; import rvv_pkg::*; #(
     };
 
     // Store their request value
-    operand_req[alu_result_addr_i[idx_width(NrBanks)-1:0]][NrOperandQueues + VFU_Alu] =
+    operand_req[alu_result_addr_i % NrBanks][NrOperandQueues + VFU_Alu] =
     alu_result_req_i;
-    operand_req[mfpu_result_addr_i[idx_width(NrBanks)-1:0]][NrOperandQueues + VFU_MFpu] =
+    operand_req[mfpu_result_addr_i % NrBanks][NrOperandQueues + VFU_MFpu] =
     mfpu_result_req_i;
-    operand_req[masku_result_addr[idx_width(NrBanks)-1:0]][NrOperandQueues + VFU_MaskUnit] =
+    operand_req[masku_result_addr % NrBanks][NrOperandQueues + VFU_MaskUnit] =
     masku_result_req;
-    operand_req[sldu_result_addr[idx_width(NrBanks)-1:0]][NrOperandQueues + VFU_SlideUnit] =
+    operand_req[sldu_result_addr % NrBanks][NrOperandQueues + VFU_SlideUnit] =
     sldu_result_req;
-    operand_req[ldu_result_addr[idx_width(NrBanks)-1:0]][NrOperandQueues + VFU_LoadUnit] =
+    operand_req[ldu_result_addr % NrBanks][NrOperandQueues + VFU_LoadUnit] =
     ldu_result_req;
 
     // Generate the grant signals

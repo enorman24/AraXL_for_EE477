@@ -1,0 +1,54 @@
+# cfg.yml - Main hammer config file
+
+synthesis.inputs.top_module: "ara_soc_syn"
+
+# Root of araxl directory
+araxl_root: "/homes/enorman/ee477/AraXL"
+
+# Root of AraXL_chip cfg dir (used by src.yml to locate macro_preamble.sv)
+araxl_chip_cfg: "/homes/enorman/ee477/AraXL_chip/cfg"
+
+# Preserve the bsg_mem macro boundary so Genus does not flatten through it
+synthesis.inputs.preserve_modules: []
+
+sram_generator.fakeram.pinPitch_nm: 700
+vlsi.inputs.sram_parameters: [
+    {name: "fakeram_d1024_w256", family: "1rw", depth: 1024, width: 256, mask: True, mux: 1, vt: ""},
+    {name: "fakeram_d64_w64",   family: "1rw", depth:   64, width:  64, mask: True, mux: 1, vt: ""},
+  ]
+
+# Turn-off clock gating, issue with sky130 latch model in some clock gate cells
+# when coming out of x leading to failed simulations.
+synthesis.clock_gating_mode: ""
+par.innovus.design_flow_effort: "standard" # Valid options: express (fastest), standard, and extreme (slowest).
+
+
+# Formal HDL commands (for parsing source files)
+formal.inputs.hdl_search_paths: 
+  - "${bsg_root}/bsg_misc"
+  - "${bsg_root}/hard/fakeram"
+formal.inputs.hdl_search_paths_meta: [subst]
+# par.innovus.floorplan_mode: "generateplusmanual"
+# par.innovus.floorplan_script_contents: ""
+
+# Custom SDC constraints
+vlsi.inputs:
+  # You can add SDC constraints directly here (list of strings)
+  custom_sdc_constraints: []
+  
+  # Additional SDC files to read
+  custom_sdc_files:
+    - "constraints.tcl"
+  custom_sdc_files_meta: prependlocal # Prepend path of this config file!
+
+# Placement Constraints
+vlsi.inputs.placement_constraints:
+  - path: "TOP" # (this name isn't actually checked...)
+    type: toplevel
+    # Define chip dimensions
+    width:  8000
+    height: 8000
+    x: 0
+    y: 0
+    margins: {left: 0, right: 0, top: 0, bottom: 0}
+

@@ -530,7 +530,7 @@ module valu import ara_pkg::*; import rvv_pkg::*; import cf_math_pkg::idx_width;
                   else begin
                     issue_cnt_d = (vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vl / 8) >>
                       vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vtype.vsew;
-                    issue_cnt_d += |vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vl[2:0];
+                    issue_cnt_d += |(vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vl & vlen_t'(7));
                   end
                 end
               end
@@ -666,7 +666,7 @@ module valu import ara_pkg::*; import rvv_pkg::*; import cf_math_pkg::idx_width;
             else begin
               issue_cnt_d = (vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vl / 8) >>
                 vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vtype.vsew;
-              issue_cnt_d += |vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vl[2:0];
+              issue_cnt_d += |(vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vl & vlen_t'(7));
             end
           end
 
@@ -702,7 +702,7 @@ module valu import ara_pkg::*; import rvv_pkg::*; import cf_math_pkg::idx_width;
                 else begin
                   issue_cnt_d = (vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vl / 8) >>
                     vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vtype.vsew;
-                  issue_cnt_d += |vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vl[2:0];
+                  issue_cnt_d += |(vinsn_queue_q.vinsn[vinsn_queue_d.issue_pnt].vl & vlen_t'(7));
                 end
               end
 
@@ -784,7 +784,7 @@ module valu import ara_pkg::*; import rvv_pkg::*; import cf_math_pkg::idx_width;
           // vl > 0. Therefore, commit_cnt = ceil((vl / 8) >> sew)
           commit_cnt_d = (vinsn_queue_q.vinsn[vinsn_queue_d.commit_pnt].vl / 8) >>
             vinsn_queue_q.vinsn[vinsn_queue_d.commit_pnt].vtype.vsew;
-          commit_cnt_d += |vinsn_queue_q.vinsn[vinsn_queue_d.commit_pnt].vl[2:0];
+          commit_cnt_d += |(vinsn_queue_q.vinsn[vinsn_queue_d.commit_pnt].vl & vlen_t'(7));
         end
 
       // Initialize counters and alu state if needed by the next instruction
@@ -825,7 +825,7 @@ module valu import ara_pkg::*; import rvv_pkg::*; import cf_math_pkg::idx_width;
         else begin
           issue_cnt_d = (vfu_operation_i.vl / 8) >>
             vfu_operation_i.vtype.vsew;
-          issue_cnt_d += |vfu_operation_i.vl[2:0];
+          issue_cnt_d += |(vfu_operation_i.vl & vlen_t'(7));
         end
       end
       if (vinsn_queue_d.commit_cnt == '0)
@@ -834,7 +834,7 @@ module valu import ara_pkg::*; import rvv_pkg::*; import cf_math_pkg::idx_width;
         else begin
           // Operations between mask vectors operate on bits
           commit_cnt_d  = (vfu_operation_i.vl / 8) >> vfu_operation_i.vtype.vsew;
-          commit_cnt_d += |vfu_operation_i.vl[2:0];
+          commit_cnt_d += |(vfu_operation_i.vl & vlen_t'(7));
         end
 
       // Bump pointers and counters of the vector instruction queue

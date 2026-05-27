@@ -79,19 +79,18 @@ module vector_regfile import ara_pkg::*; #(
     assign vrf_clk = clk_i;
 `endif
 
-    tc_sram #(
-      .NumWords (NumWords ),
-      .DataWidth(DataWidth),
-      .NumPorts (1        )
+    bsg_mem_1rw_sync_mask_write_byte #(
+      .els_p        (NumWords ),
+      .data_width_p (DataWidth)
     ) data_sram (
-      .clk_i  (vrf_clk                           ),
-      .rst_ni (rst_ni                            ),
-      .req_i  (req_i[bank]                       ),
-      .we_i   (wen_i[bank]                       ),
-      .rdata_o(rdata[bank]                       ),
-      .wdata_i(wdata_i[bank]                     ),
-      .be_i   (be_i[bank]                        ),
-      .addr_i (addr_i[bank][$clog2(NumWords)-1:0])
+      .clk_i        (vrf_clk                           ),
+      .reset_i      (~rst_ni                           ),
+      .v_i          (req_i[bank]                       ),
+      .w_i          (wen_i[bank]                       ),
+      .addr_i       (addr_i[bank][$clog2(NumWords)-1:0]),
+      .data_i       (wdata_i[bank]                     ),
+      .write_mask_i (be_i[bank]                        ),
+      .data_o       (rdata[bank]                       )
     );
   end : gen_banks
 

@@ -235,15 +235,15 @@ module operand_queue import ara_pkg::*; import rvv_pkg::*; import cf_math_pkg::i
       // processing units (valu and vmfpu), masking the unused elements.
       unique case (cmd.eew)
         EW8 : begin
-          incomplete_packet = |cmd.vl[2:0];
+          incomplete_packet = |(cmd.vl & vlen_t'(7));
           last_packet       = ((cmd.vl - vl_q) <= 8) ? 1'b1 : 1'b0;
         end
         EW16: begin
-          incomplete_packet = |cmd.vl[1:0];
+          incomplete_packet = |(cmd.vl & vlen_t'(3));
           last_packet       = ((cmd.vl - vl_q) <= 4) ? 1'b1 : 1'b0;
         end
         EW32: begin
-          incomplete_packet = |cmd.vl[0:0];
+          incomplete_packet = |(cmd.vl & vlen_t'(1));
           last_packet       = ((cmd.vl - vl_q) <= 2) ? 1'b1 : 1'b0;
         end
         default: begin
@@ -375,15 +375,15 @@ module operand_queue import ara_pkg::*; import rvv_pkg::*; import cf_math_pkg::i
           if (SupportNtrVal) unique case (cmd.eew)
             EW8 : for (int unsigned b = 0; b < 8; b++) begin
                     automatic int unsigned bs = shuffle_index(b, 1, EW8);
-                    if ((b >> 0) >= cmd.vl[2:0]) conv_operand[8*bs +: 8] = ntr.w8[b];
+                    if ((b >> 0) >= (cmd.vl & vlen_t'(7))) conv_operand[8*bs +: 8] = ntr.w8[b];
                   end
             EW16: for (int unsigned b = 0; b < 8; b++) begin
                     automatic int unsigned bs = shuffle_index(b, 1, EW16);
-                    if ((b >> 1) >= cmd.vl[1:0]) conv_operand[8*bs +: 8] = ntr.w8[b];
+                    if ((b >> 1) >= (cmd.vl & vlen_t'(3))) conv_operand[8*bs +: 8] = ntr.w8[b];
                   end
             EW32: for (int unsigned b = 0; b < 8; b++) begin
                     automatic int unsigned bs = shuffle_index(b, 1, EW32);
-                    if ((b >> 2) >= cmd.vl[0:0]) conv_operand[8*bs +: 8] = ntr.w8[b];
+                    if ((b >> 2) >= (cmd.vl & vlen_t'(1))) conv_operand[8*bs +: 8] = ntr.w8[b];
                   end
             default:;
           endcase

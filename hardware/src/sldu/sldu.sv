@@ -741,7 +741,7 @@ module sldu import ara_pkg::*; import rvv_pkg::*; #(
               // In this scenario, the closest cluster can send the next transaction quicker reaching the destination before the previous data 
               // from the farther cluster reaches the destination.
               // This should be avoided. The simple solution is to wait for a few clocks before sending the next set of packets.
-              if ((stride > NrLanes) && (stride[1:0]!=0))
+              if ((stride > NrLanes) && ((int'(stride) % 4) != 0))
                 use_latency_d = 1'b1;
 
               eff_stride = vinsn_issue_q.stride - (vrf_pnt_d * ((8 * NrLanes) << num_clusters_i));
@@ -781,7 +781,7 @@ module sldu import ara_pkg::*; import rvv_pkg::*; #(
               src_lane_d = '0;
               vrf_pnt_d = '0;
 
-              if ((eff_elem_stride > NrLanes) && (eff_elem_stride[1:0]!=0))
+              if ((eff_elem_stride > NrLanes) && ((int'(eff_elem_stride) % 4) != 0))
                 use_latency_d = 1'b1;
 
               n_ring_out_d = eff_elem_stride > NrLanes ? NrLanes : eff_elem_stride;
@@ -1336,7 +1336,7 @@ module sldu import ara_pkg::*; import rvv_pkg::*; #(
     is_ring_reduction = vinsn_ring.vfu inside {VFU_Alu, VFU_MFpu};
     
     last_elem_byte_idx = shuffle_index((vinsn_ring.vl-1) << vinsn_ring.vtype.vsew, NrLanes, vinsn_ring.vtype.vsew);
-    last_elem_offset = last_elem_byte_idx[2:0]; // Find offset within the 8B
+    last_elem_offset = int'(last_elem_byte_idx) % 8; // Find offset within the 8B
     
     
     if (vinsn_ring_valid && (vinsn_ring.vl > 0) && ((n_ring_in_q > 0) || is_ring_reduction)) begin
