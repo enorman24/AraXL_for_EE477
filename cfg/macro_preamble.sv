@@ -1,5 +1,4 @@
 `define VCS
-`define VERILATOR
 `define USE_CLUSTER
 `define VLEN 4096
 

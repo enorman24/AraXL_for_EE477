@@ -1,7 +1,7 @@
 # cfg.yml - Main hammer config file
 
 synthesis.inputs.top_module: "ara_soc_syn"
-
+sim.inputs.tb_name: "ara_pcie_tb"   # official PCIe DRAM-load integration testbench
 # Root of araxl directory
 araxl_root: "/homes/enorman/ee477/AraXL"
 

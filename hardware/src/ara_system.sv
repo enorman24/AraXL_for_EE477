@@ -55,10 +55,11 @@ module ara_system import axi_pkg::*; import ara_pkg::*; #(
     parameter type                              system_axi_req_t   = logic,
     parameter type                              system_axi_resp_t  = logic
   ) (
-    input  logic                    clk_i,
-    input  logic                    rst_ni,
-    input  logic             [63:0] boot_addr_i,
-    input                     [2:0] hart_id_i,
+	    input  logic                    clk_i,
+	    input  logic                    rst_ni,
+	    input  logic             [63:0] boot_addr_i,
+	    input  logic                    boot_hold_i,
+	    input                     [2:0] hart_id_i,
     // Scan chain
     input  logic                    scan_enable_i,
     input  logic                    scan_data_i,
@@ -145,13 +146,14 @@ module ara_system import axi_pkg::*; import ara_pkg::*; #(
   ) i_ariane (
     .clk_i            (clk_i                 ),
     .rst_ni           (rst_ni                ),
-    .boot_addr_i      (boot_addr_i           ),
-    .hart_id_i        (hart_id               ),
-    .irq_i            ('0                    ),
-    .ipi_i            ('0                    ),
-    .time_irq_i       ('0                    ),
-    .debug_req_i      ('0                    ),
-    .rvfi_o           (                      ),
+	    .boot_addr_i      (boot_addr_i           ),
+	    .hart_id_i        (hart_id               ),
+	    .irq_i            ('0                    ),
+	    .ipi_i            ('0                    ),
+	    .time_irq_i       ('0                    ),
+	    .debug_req_i      ('0                    ),
+	    .boot_hold_i      (boot_hold_i           ),
+	    .rvfi_o           (                      ),
     // Accelerator ports
     .cvxif_req_o      (acc_req               ),
     .cvxif_resp_i     (acc_resp_pack         ),
