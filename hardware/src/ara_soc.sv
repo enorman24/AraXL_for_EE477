@@ -26,7 +26,12 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
     parameter  int           unsigned AxiRespDelay = 200,
     // Main memory
     // Shrunk from 2**20 to 1024 for bsg_fakeram bring-up: 32 KiB at AxiDataWidth=256.
-    parameter  int           unsigned L2NumWords   = 1024,
+    parameter  int           unsigned L2NumWords   = 1024, // CHANGED THIS TO ALLOW RAM TO BE ON CHIP
+    // PCIe AXI master types. Default `logic` is overridden by the chip top
+    // with the same `system_*` typedef family used inside this module so that
+    // the xbar slave-port ID width is consistent across both masters.
+    parameter  type                   pcie_axi_req_t  = logic,
+    parameter  type                   pcie_axi_resp_t = logic,
     // Dependant parameters. DO NOT CHANGE!
     localparam type                   axi_data_t   = logic [AxiDataWidth-1:0],
     localparam type                   axi_strb_t   = logic [AxiDataWidth/8-1:0],
@@ -56,7 +61,33 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
     output logic [31:0] uart_pwdata_o,
     input  logic [31:0] uart_prdata_i,
     input  logic        uart_pready_i,
-    input  logic        uart_pslverr_i
+    input  logic        uart_pslverr_i,
+    // PCIe AXI master input (wide system AXI)
+    input  pcie_axi_req_t  pcie_axi_req_i,
+    output pcie_axi_resp_t pcie_axi_resp_o,
+    // PCIe status from DLL (flows into pcie_csr)
+    input  logic        pcie_phy_link_up_i,
+    input  logic        pcie_fc_initialized_i,
+    input  logic [7:0]  pcie_cfg_bus_number_i,
+    input  logic [4:0]  pcie_cfg_device_number_i,
+    input  logic [2:0]  pcie_cfg_function_number_i,
+    input  logic [2:0]  pcie_max_payload_size_i,
+    input  logic [2:0]  pcie_max_read_request_size_i,
+    input  logic        pcie_rcb_128b_i,
+    // PCIe counters from bridge (flow into pcie_csr)
+    input  logic [31:0] pcie_ur_count_i,
+    input  logic [31:0] pcie_ca_count_i,
+    input  logic [31:0] pcie_tlp_err_count_i,
+    input  logic [31:0] pcie_outstanding_count_i,
+    input  logic        pcie_bridge_error_event_i,
+    // pcie_csr -> bridge controls
+    output logic        pcie_bridge_enable_o,
+    output logic [63:0] pcie_bar_base_o,
+    output logic [63:0] pcie_bar_mask_o,
+    output logic [63:0] pcie_axi_target_base_o,
+    output logic        pcie_boot_hold_o,
+    // Chip-level PCIe interrupt pin
+    output logic        pcie_irq_o
   );
 
   `include "axi/assign.svh"
@@ -68,25 +99,28 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   //  Memory Regions  //
   //////////////////////
 
-  localparam NrAXIMasters = 1; // Actually masters, but slaves on the crossbar
+  localparam NrAXIMasters = 2; // ara_system (Ariane+Ara mux) + PCIe bridge
 
   typedef enum int unsigned {
-    L2MEM = 0,
-    UART  = 1,
-    CTRL  = 2
+    L2MEM    = 0,
+    UART     = 1,
+    CTRL     = 2,
+    PCIE_CSR = 3
   } axi_slaves_e;
-  localparam NrAXISlaves = CTRL + 1;
+  localparam NrAXISlaves = PCIE_CSR + 1;
 
   // Memory Map
   // 1GByte of DDR (split between two chips on Genesys2)
-  localparam logic [63:0] DRAMLength = 64'h40000000;
-  localparam logic [63:0] UARTLength = 64'h1000;
-  localparam logic [63:0] CTRLLength = 64'h1000;
+  localparam logic [63:0] DRAMLength    = 64'h40000000;
+  localparam logic [63:0] UARTLength    = 64'h1000;
+  localparam logic [63:0] CTRLLength    = 64'h1000;
+  localparam logic [63:0] PCIE_CSRLength = 64'h1000;
 
   typedef enum logic [63:0] {
-    DRAMBase = 64'h8000_0000,
-    UARTBase = 64'hC000_0000,
-    CTRLBase = 64'hD000_0000
+    DRAMBase    = 64'h8000_0000,
+    UARTBase    = 64'hC000_0000,
+    CTRLBase    = 64'hD000_0000,
+    PCIE_CSRBase = 64'hC000_1000
   } soc_bus_start_e;
 
   ///////////
@@ -110,13 +144,18 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   typedef logic [AxiCoreIdWidth-1:0] axi_core_id_t;
 
   // AXI Typedefs
-  `AXI_TYPEDEF_ALL(system, axi_addr_t, axi_id_t, axi_data_t, axi_strb_t, axi_user_t)
+  // With NrAXIMasters>1 we must distinguish:
+  //   system_* (xbar slave-port side, master-device facing) - axi_soc_id_t
+  //   soc_wide_*/soc_narrow_* (xbar master-port side, slave-device facing) - axi_id_t
+  // For NrAXIMasters=1 they are equal because $clog2(1)=0; the typedef split
+  // keeps the chip consistent across both configurations.
+  `AXI_TYPEDEF_ALL(system, axi_addr_t, axi_soc_id_t, axi_data_t, axi_strb_t, axi_user_t)
   `AXI_TYPEDEF_ALL(ara_axi, axi_addr_t, axi_core_id_t, axi_data_t, axi_strb_t, axi_user_t)
   `AXI_TYPEDEF_ALL(ariane_axi, axi_addr_t, axi_core_id_t, axi_narrow_data_t, axi_narrow_strb_t,
     axi_user_t)
-  `AXI_TYPEDEF_ALL(soc_narrow, axi_addr_t, axi_soc_id_t, axi_narrow_data_t, axi_narrow_strb_t,
+  `AXI_TYPEDEF_ALL(soc_narrow, axi_addr_t, axi_id_t, axi_narrow_data_t, axi_narrow_strb_t,
     axi_user_t)
-  `AXI_TYPEDEF_ALL(soc_wide, axi_addr_t, axi_soc_id_t, axi_data_t, axi_strb_t, axi_user_t)
+  `AXI_TYPEDEF_ALL(soc_wide, axi_addr_t, axi_id_t, axi_data_t, axi_strb_t, axi_user_t)
   `AXI_LITE_TYPEDEF_ALL(soc_narrow_lite, axi_addr_t, axi_narrow_data_t, axi_narrow_strb_t)
 
   `AXI_TYPEDEF_ALL(ara_cluster_axi, cluster_axi_addr_t, axi_core_id_t, cluster_axi_data_t, cluster_axi_strb_t, cluster_axi_user_t)
@@ -155,10 +194,20 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
 
   axi_pkg::xbar_rule_64_t [NrAXISlaves-1:0] routing_rules;
   assign routing_rules = '{
-    '{idx: CTRL, start_addr: CTRLBase, end_addr: CTRLBase + CTRLLength},
-    '{idx: UART, start_addr: UARTBase, end_addr: UARTBase + UARTLength},
-    '{idx: L2MEM, start_addr: DRAMBase, end_addr: DRAMBase + DRAMLength}
+    '{idx: PCIE_CSR, start_addr: PCIE_CSRBase, end_addr: PCIE_CSRBase + PCIE_CSRLength},
+    '{idx: CTRL,     start_addr: CTRLBase,     end_addr: CTRLBase + CTRLLength},
+    '{idx: UART,     start_addr: UARTBase,     end_addr: UARTBase + UARTLength},
+    '{idx: L2MEM,    start_addr: DRAMBase,     end_addr: DRAMBase + DRAMLength}
   };
+
+  // Wrap the two slave-port masters (ara_system + PCIe bridge) into the array
+  // that axi_xbar expects.
+  system_req_t  [NrAXIMasters-1:0] xbar_slv_req;
+  system_resp_t [NrAXIMasters-1:0] xbar_slv_resp;
+  assign xbar_slv_req[0]   = system_axi_req;
+  assign system_axi_resp   = xbar_slv_resp[0];
+  assign xbar_slv_req[1]   = pcie_axi_req_i;
+  assign pcie_axi_resp_o   = xbar_slv_resp[1];
 
   axi_xbar #(
     .Cfg          (XBarCfg                ),
@@ -180,8 +229,8 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
     .clk_i                (clk_i               ),
     .rst_ni               (rst_ni              ),
     .test_i               (1'b0                ),
-    .slv_ports_req_i      (system_axi_req      ),
-    .slv_ports_resp_o     (system_axi_resp     ),
+    .slv_ports_req_i      (xbar_slv_req        ),
+    .slv_ports_resp_o     (xbar_slv_resp       ),
     .mst_ports_req_o      (periph_wide_axi_req ),
     .mst_ports_resp_i     (periph_wide_axi_resp),
     .addr_map_i           (routing_rules       ),
@@ -198,7 +247,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   soc_wide_req_t  l2mem_wide_axi_req_wo_atomics;
   soc_wide_resp_t l2mem_wide_axi_resp_wo_atomics;
   axi_atop_filter #(
-    .AxiIdWidth     (AxiSocIdWidth  ),
+    .AxiIdWidth     (AxiIdWidth     ),
     .AxiMaxWriteTxns(4              ),
     .axi_req_t      (soc_wide_req_t ),
     .axi_resp_t     (soc_wide_resp_t)
@@ -222,7 +271,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   axi_to_mem #(
     .AddrWidth (AxiAddrWidth   ),
     .DataWidth (AxiDataWidth   ),
-    .IdWidth   (AxiSocIdWidth  ),
+    .IdWidth   (AxiIdWidth     ),
     .NumBanks  (1              ),
     .axi_req_t (soc_wide_req_t ),
     .axi_resp_t(soc_wide_resp_t)
@@ -244,6 +293,23 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   );
 
 `ifndef SPYGLASS
+  `ifdef RTL_BEHAVIORAL_SIM
+  // Pure RTL sim: flat array exposes mem[] for TB ELF backdoor without
+  // traversing bsg_mem generate-for scopes via a runtime-variable index.
+  ara_l2_sim #(
+    .els_p        (L2NumWords  ),
+    .data_width_p (AxiDataWidth)
+  ) i_dram (
+    .clk_i        (clk_i                                                                      ),
+    .reset_i      (~rst_ni                                                                    ),
+    .v_i          (l2_req                                                                     ),
+    .w_i          (l2_we                                                                      ),
+    .addr_i       (l2_addr[$clog2(L2NumWords)-1+$clog2(AxiDataWidth/8):$clog2(AxiDataWidth/8)]),
+    .data_i       (l2_wdata                                                                   ),
+    .write_mask_i (l2_be                                                                      ),
+    .data_o       (l2_rdata                                                                   )
+  );
+  `else
   bsg_mem_1rw_sync_mask_write_byte #(
     .els_p        (L2NumWords  ),
     .data_width_p (AxiDataWidth)
@@ -257,6 +323,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
     .write_mask_i (l2_be                                                                      ),
     .data_o       (l2_rdata                                                                   )
   );
+  `endif
 `else
   assign l2_rdata = '0;
 `endif
@@ -271,7 +338,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   //  UART  //
   ////////////
 
-  `AXI_TYPEDEF_ALL(uart_axi, axi_addr_t, axi_soc_id_t, logic [31:0], logic [3:0], axi_user_t)
+  `AXI_TYPEDEF_ALL(uart_axi, axi_addr_t, axi_id_t, logic [31:0], logic [3:0], axi_user_t)
   `AXI_LITE_TYPEDEF_ALL(uart_lite, axi_addr_t, logic [31:0], logic [3:0])
   `APB_TYPEDEF_ALL(uart_apb, axi_addr_t, logic [31:0], logic [3:0])
 
@@ -325,7 +392,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   axi_to_axi_lite #(
     .AxiAddrWidth   (AxiAddrWidth    ),
     .AxiDataWidth   (32'd32          ),
-    .AxiIdWidth     (AxiSocIdWidth   ),
+    .AxiIdWidth     (AxiIdWidth      ),
     .AxiUserWidth   (AxiUserWidth    ),
     .AxiMaxWriteTxns(32'd1           ),
     .AxiMaxReadTxns (32'd1           ),
@@ -348,7 +415,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
     .AxiSlvPortDataWidth(AxiWideDataWidth  ),
     .AxiMstPortDataWidth(32                ),
     .AxiAddrWidth       (AxiAddrWidth      ),
-    .AxiIdWidth         (AxiSocIdWidth     ),
+    .AxiIdWidth         (AxiIdWidth        ),
     .AxiMaxReads        (1                 ),
     .ar_chan_t          (soc_wide_ar_chan_t),
     .mst_r_chan_t       (uart_axi_r_chan_t ),
@@ -382,7 +449,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
   axi_to_axi_lite #(
     .AxiAddrWidth   (AxiAddrWidth          ),
     .AxiDataWidth   (AxiNarrowDataWidth    ),
-    .AxiIdWidth     (AxiSocIdWidth         ),
+    .AxiIdWidth     (AxiIdWidth            ),
     .AxiUserWidth   (AxiUserWidth          ),
     .AxiMaxReadTxns (1                     ),
     .AxiMaxWriteTxns(1                     ),
@@ -424,7 +491,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
     .AxiSlvPortDataWidth(AxiWideDataWidth    ),
     .AxiMstPortDataWidth(AxiNarrowDataWidth  ),
     .AxiAddrWidth       (AxiAddrWidth        ),
-    .AxiIdWidth         (AxiSocIdWidth       ),
+    .AxiIdWidth         (AxiIdWidth          ),
     .AxiMaxReads        (2                   ),
     .ar_chan_t          (soc_wide_ar_chan_t  ),
     .mst_r_chan_t       (soc_narrow_r_chan_t ),
@@ -445,6 +512,100 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
     .mst_req_o (periph_narrow_axi_req[CTRL] ),
     .mst_resp_i(periph_narrow_axi_resp[CTRL])
   );
+
+  /////////////////////
+  //  PCIE CSR slave //
+  /////////////////////
+
+  `AXI_TYPEDEF_ALL(pcie_csr_axi, axi_addr_t, axi_id_t, logic [31:0], logic [3:0], axi_user_t)
+  `AXI_LITE_TYPEDEF_ALL(pcie_csr_lite, axi_addr_t, logic [31:0], logic [3:0])
+
+  pcie_csr_axi_req_t   pcie_csr_axi_req;
+  pcie_csr_axi_resp_t  pcie_csr_axi_resp;
+  pcie_csr_lite_req_t  pcie_csr_lite_req;
+  pcie_csr_lite_resp_t pcie_csr_lite_resp;
+  logic                pcie_boot_hold;
+
+  axi_dw_converter #(
+    .AxiSlvPortDataWidth(AxiWideDataWidth      ),
+    .AxiMstPortDataWidth(32                    ),
+    .AxiAddrWidth       (AxiAddrWidth          ),
+    .AxiIdWidth         (AxiIdWidth            ),
+    .AxiMaxReads        (1                     ),
+    .ar_chan_t          (soc_wide_ar_chan_t    ),
+    .mst_r_chan_t       (pcie_csr_axi_r_chan_t ),
+    .slv_r_chan_t       (soc_wide_r_chan_t     ),
+    .aw_chan_t          (pcie_csr_axi_aw_chan_t),
+    .b_chan_t           (soc_wide_b_chan_t     ),
+    .mst_w_chan_t       (pcie_csr_axi_w_chan_t ),
+    .slv_w_chan_t       (soc_wide_w_chan_t     ),
+    .axi_mst_req_t      (pcie_csr_axi_req_t    ),
+    .axi_mst_resp_t     (pcie_csr_axi_resp_t   ),
+    .axi_slv_req_t      (soc_wide_req_t        ),
+    .axi_slv_resp_t     (soc_wide_resp_t       )
+  ) i_axi_slave_pcie_csr_dwc (
+    .clk_i     (clk_i                          ),
+    .rst_ni    (rst_ni                         ),
+    .slv_req_i (periph_wide_axi_req[PCIE_CSR]  ),
+    .slv_resp_o(periph_wide_axi_resp[PCIE_CSR] ),
+    .mst_req_o (pcie_csr_axi_req               ),
+    .mst_resp_i(pcie_csr_axi_resp              )
+  );
+
+  axi_to_axi_lite #(
+    .AxiAddrWidth   (AxiAddrWidth        ),
+    .AxiDataWidth   (32'd32              ),
+    .AxiIdWidth     (AxiIdWidth          ),
+    .AxiUserWidth   (AxiUserWidth        ),
+    .AxiMaxWriteTxns(32'd1               ),
+    .AxiMaxReadTxns (32'd1               ),
+    .FallThrough    (1'b1                ),
+    .full_req_t     (pcie_csr_axi_req_t  ),
+    .full_resp_t    (pcie_csr_axi_resp_t ),
+    .lite_req_t     (pcie_csr_lite_req_t ),
+    .lite_resp_t    (pcie_csr_lite_resp_t)
+  ) i_axi_to_lite_pcie_csr (
+    .clk_i     (clk_i              ),
+    .rst_ni    (rst_ni             ),
+    .test_i    (1'b0               ),
+    .slv_req_i (pcie_csr_axi_req   ),
+    .slv_resp_o(pcie_csr_axi_resp  ),
+    .mst_req_o (pcie_csr_lite_req  ),
+    .mst_resp_i(pcie_csr_lite_resp )
+  );
+
+  pcie_csr #(
+    .AddrWidth        (AxiAddrWidth        ),
+    .AxiTargetBaseRst (DRAMBase            ),
+    .axi_lite_req_t   (pcie_csr_lite_req_t ),
+    .axi_lite_resp_t  (pcie_csr_lite_resp_t)
+  ) i_pcie_csr (
+    .clk_i                    (clk_i                       ),
+    .rst_ni                   (rst_ni                      ),
+    .axi_lite_req_i           (pcie_csr_lite_req           ),
+    .axi_lite_resp_o          (pcie_csr_lite_resp          ),
+    .phy_link_up_i            (pcie_phy_link_up_i          ),
+    .fc_initialized_i         (pcie_fc_initialized_i       ),
+    .cfg_bus_number_i         (pcie_cfg_bus_number_i       ),
+    .cfg_device_number_i      (pcie_cfg_device_number_i    ),
+    .cfg_function_number_i    (pcie_cfg_function_number_i  ),
+    .max_payload_size_i       (pcie_max_payload_size_i     ),
+    .max_read_request_size_i  (pcie_max_read_request_size_i),
+    .rcb_128b_i               (pcie_rcb_128b_i             ),
+    .ur_count_i               (pcie_ur_count_i             ),
+    .ca_count_i               (pcie_ca_count_i             ),
+    .tlp_err_count_i          (pcie_tlp_err_count_i        ),
+    .outstanding_count_i      (pcie_outstanding_count_i    ),
+    .bridge_error_event_i     (pcie_bridge_error_event_i   ),
+    .bridge_enable_o          (pcie_bridge_enable_o        ),
+    .bar_base_o               (pcie_bar_base_o             ),
+    .bar_mask_o               (pcie_bar_mask_o             ),
+    .axi_target_base_o        (pcie_axi_target_base_o      ),
+    .boot_hold_o              (pcie_boot_hold              ),
+    .pcie_irq_o               (pcie_irq_o                  )
+  );
+
+  assign pcie_boot_hold_o = pcie_boot_hold;
 
   //////////////
   //  System  //
@@ -528,6 +689,7 @@ module ara_soc import axi_pkg::*; import ara_pkg::*; #(
     .clk_i        (clk_i                    ),
     .rst_ni       (rst_ni                   ),
     .boot_addr_i  (DRAMBase                 ), // start fetching from DRAM
+    .boot_hold_i  (pcie_boot_hold           ),
     .hart_id_i    (hart_id                  ),
     .scan_enable_i(1'b0                     ),
     .scan_data_i  (1'b0                     ),

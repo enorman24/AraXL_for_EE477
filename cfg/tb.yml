@@ -1,41 +1,64 @@
 # tb.yml - Simulation Testbench Configuration (AraXL)
-
-# Testbench files and DPI ELF loader.
+#
+# Official PCIe testbench files and DPI ELF loader.
 sim.inputs.tb_input_files: [
-  "${araxl_root}/hardware/tb/ara_testharness.sv",
-  "${araxl_root}/hardware/tb/ara_tb.sv",
+  "${araxl_root}/hardware/deps/ariane/core/include/instr_tracer_pkg.sv",
+  "${araxl_root}/hardware/deps/ariane/common/local/util/instr_tracer_if.sv",
+  "${araxl_root}/hardware/deps/ariane/common/local/util/instr_tracer.sv",
+
+  # --- PCIe DRAM-load integration support ---
+  "${araxl_root}/hardware/tb/pcie_host_partner_model.sv",
+  "${araxl_root}/hardware/tb/ara_chip_tb_harness.sv",
+  "${araxl_root}/hardware/tb/ara_pcie_tb.sv",
+
+  # --- DPI ELF loader (shared by all TBs) ---
   "${araxl_root}/hardware/tb/dpi/elfloader.cc",
 ]
 sim.inputs.tb_input_files_meta: [subst]
 
-# Toplevel simulation module name.
-sim.inputs.tb_name: "ara_tb"
 # Used by vcs-mk to generate CDC noTiming list in syn/par simulations.
-sim.inputs.dut_path: "ara_tb.dut.i_ara_soc"
+sim.inputs.dut_path: "ara_pcie_tb.dut.i_ara_soc"
 
 # Search directories for `include directives in simulations.
 sim.inputs.tb_incdir: [
+  "${araxl_root}/hardware/tb",
   "${araxl_root}/hardware/tb/dpi",
   "${araxl_root}/toolchain/riscv-isa-sim",
+  "${bsg_root}/hard/fakeram",
 ]
 sim.inputs.tb_incdir_meta: [subst]
 
 # Geometry must match ara_soc_syn wrapper (NrLanes=4, NrClusters=2).
+# RTL_BEHAVIORAL_SIM: selects ara_l2_sim (flat mem[] array) inside ara_soc.
 sim.inputs.tb_defines: [
   "NR_LANES=4",
   "NR_CLUSTERS=2",
+  "RTL_BEHAVIORAL_SIM=1",
+  "USE_PCIE_HOST_PARTNER=1",
 ]
 sim.inputs.tb_defines_meta: [subst]
 
 # Save runtime plusargs into simv executable.
+# Swap active PRELOAD with a commented line to run a different kernel.
 sim.inputs.execution_flags: [
+  #"+PRELOAD=${araxl_root}/apps/bin/hello_world",
+  # "+PRELOAD=${araxl_root}/apps/bin/dotproduct",
   "+PRELOAD=${araxl_root}/apps/bin/fdotproduct",
+  # "+PRELOAD=${araxl_root}/apps/bin/fmatmul",
+  # "+PRELOAD=${araxl_root}/apps/bin/imatmul",
+  # "+PRELOAD=${araxl_root}/apps/bin/gemv",
+  # "+PRELOAD=${araxl_root}/apps/bin/spmv",
+  # "+PRELOAD=${araxl_root}/apps/bin/fft",
+  # "+PRELOAD=${araxl_root}/apps/bin/fconv2d",
+  # "+PRELOAD=${araxl_root}/apps/bin/softmax",
+  "+MAX_CYCLES=10000000",
 ]
 sim.inputs.execution_flags_meta: [subst]
 
 # DPI ELF loader dependencies.
 sim.inputs.compiler_cc_opts: [
   "-I${araxl_root}/toolchain/riscv-isa-sim",
+  "-I${araxl_root}/toolchain/riscv-isa-sim/build",
 ]
 sim.inputs.compiler_cc_opts_meta: [subst]
 

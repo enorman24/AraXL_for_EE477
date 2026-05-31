@@ -19,6 +19,7 @@ workspace:
 
 export_include_dirs:
   - hardware/include
+  - hardware/pcie_datalink_layer/src/packages
 
 sources:
   files:
@@ -76,6 +77,55 @@ sources:
     - hardware/src/ara_system.sv
     # Level 9
     - hardware/src/ara_soc.sv
+    # Behavioral SRAM used by ara_soc when RTL_BEHAVIORAL_SIM is defined.
+    - hardware/src/ara_l2_sim.sv
+
+    # PCIe packages (must precede any PCIe RTL)
+    - hardware/pcie_datalink_layer/src/packages/pcie_datalink_pkg.sv
+    - hardware/pcie_datalink_layer/src/packages/pcie_tlp_pkg.sv
+    - hardware/pcie_datalink_layer/src/packages/pcie_phy_pkg.sv
+
+    - target: pcie_dll_rtl
+      files:
+        # Minimal real PCIe DLL file list.  Do not glob the whole subtree:
+        # verilog-axis and verilog-pcie both vendor modules such as arbiter,
+        # axis_arb_mux, and priority_encoder.
+        - hardware/pcie_datalink_layer/src/verilog-axis/rtl/arbiter.v
+        - hardware/pcie_datalink_layer/src/verilog-axis/rtl/priority_encoder.v
+        - hardware/pcie_datalink_layer/src/verilog-axis/rtl/axis_register.v
+        - hardware/pcie_datalink_layer/src/verilog-axis/rtl/axis_arb_mux.v
+        - hardware/pcie_datalink_layer/src/verilog-axis/rtl/axis_fifo.v
+        - hardware/pcie_datalink_layer/src/crc/pcie_dllp_crc8.v
+        - hardware/pcie_datalink_layer/src/crc/pcie_datalink_crc.sv
+        - hardware/pcie_datalink_layer/src/crc/pcie_lcrc16.sv
+        - hardware/pcie_datalink_layer/src/crc/pcie_lcrc32.sv
+        - hardware/pcie_datalink_layer/src/pcie_cfg/pcie_config_reg_pkg.sv
+        - hardware/pcie_datalink_layer/src/pcie_cfg/pcie_config_decode.sv
+        - hardware/pcie_datalink_layer/src/pcie_cfg/pcie_config_handler.sv
+        - hardware/pcie_datalink_layer/src/pcie_cfg/pcie_config_mux.sv
+        - hardware/pcie_datalink_layer/src/pcie_cfg/pcie_config_reg.sv
+        - hardware/pcie_datalink_layer/src/pcie_cfg/pcie_cfg_wrapper.sv
+        - hardware/pcie_datalink_layer/src/dllp/axis_retry_fifo.sv
+        - hardware/pcie_datalink_layer/src/dllp/axis_user_demux.sv
+        - hardware/pcie_datalink_layer/src/dllp/dllp2tlp.sv
+        - hardware/pcie_datalink_layer/src/dllp/dllp_fc_update.sv
+        - hardware/pcie_datalink_layer/src/dllp/dllp_handler.sv
+        - hardware/pcie_datalink_layer/src/dllp/dllp_receive.sv
+        - hardware/pcie_datalink_layer/src/dllp/retry_management.sv
+        - hardware/pcie_datalink_layer/src/dllp/retry_transmit.sv
+        - hardware/pcie_datalink_layer/src/dllp/tlp2dllp.sv
+        - hardware/pcie_datalink_layer/src/dllp/dllp_transmit.sv
+        - hardware/pcie_datalink_layer/src/dllp/pcie_datalink_init.sv
+        - hardware/pcie_datalink_layer/src/dllp/pcie_flow_ctrl_init.sv
+        - hardware/pcie_datalink_layer/src/dllp/pcie_datalink_layer.sv
+
+    # PCIe integration glue
+    - hardware/src/pcie/pcie_phy_stub.sv
+    - hardware/src/pcie/pcie_csr.sv
+    - hardware/src/pcie/pcie_tlp_axi_bridge.sv
+
+    # Level 10 - chip top
+    - hardware/src/ara_chip.sv
 
     - target: ara_test
       files:

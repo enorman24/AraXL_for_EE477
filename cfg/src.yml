@@ -23,6 +23,7 @@ synthesis.inputs.input_files: [
   "${bsg_root}/bsg_misc/bsg_defines.v",
   "${bsg_root}/bsg_misc/bsg_expand_bitmask.v",
   "${bsg_root}/bsg_mem/bsg_mem_1rw_sync_synth.v",
+  "${bsg_root}/bsg_mem/bsg_mem_1rw_sync.v",
   "${bsg_root}/bsg_mem/bsg_mem_1rw_sync_mask_write_byte_synth.v",
   "${bsg_root}/bsg_mem/bsg_mem_1rw_sync_mask_write_byte.v",
 
@@ -239,7 +240,6 @@ synthesis.inputs.input_files: [
   "${araxl_root}/hardware/deps/ariane/core/include/ariane_axi_pkg.sv",
   "${araxl_root}/hardware/deps/ariane/core/include/wt_cache_pkg.sv",
   "${araxl_root}/hardware/deps/ariane/core/include/std_cache_pkg.sv",
-  "${araxl_root}/hardware/deps/ariane/core/include/axi_intf.sv",
   "${araxl_root}/hardware/deps/ariane/core/include/acc_pkg.sv",
 
   # --- CVA6 / Ariane: vendor FPGA RAM models ---
@@ -378,6 +378,54 @@ synthesis.inputs.input_files: [
   "${araxl_root}/hardware/src/ara_cluster.sv",
   "${araxl_root}/hardware/src/ara_system.sv",
   "${araxl_root}/hardware/src/ara_soc.sv",
+
+  # --- PCIe: packages (must precede all PCIe RTL) ---
+  "${araxl_root}/hardware/pcie_datalink_layer/src/packages/pcie_datalink_pkg.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/packages/pcie_tlp_pkg.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/packages/pcie_phy_pkg.sv",
+
+  # --- PCIe: real data-link layer dependencies ---
+  # Minimal list for pcie_datalink_layer.sv.  Avoid globbing the full subtree:
+  # verilog-axis and verilog-pcie both provide duplicate module names.
+  "${araxl_root}/hardware/pcie_datalink_layer/src/verilog-axis/rtl/arbiter.v",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/verilog-axis/rtl/priority_encoder.v",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/verilog-axis/rtl/axis_register.v",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/verilog-axis/rtl/axis_arb_mux.v",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/verilog-axis/rtl/axis_fifo.v",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/crc/pcie_dllp_crc8.v",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/crc/pcie_datalink_crc.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/crc/pcie_lcrc16.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/crc/pcie_lcrc32.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/pcie_cfg/pcie_config_reg_pkg.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/pcie_cfg/pcie_config_decode.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/pcie_cfg/pcie_config_handler.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/pcie_cfg/pcie_config_mux.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/pcie_cfg/pcie_config_reg.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/pcie_cfg/pcie_cfg_wrapper.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/axis_retry_fifo.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/axis_user_demux.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/dllp2tlp.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/dllp_fc_update.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/dllp_handler.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/dllp_receive.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/retry_management.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/retry_transmit.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/tlp2dllp.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/dllp_transmit.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/pcie_datalink_init.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/pcie_flow_ctrl_init.sv",
+  "${araxl_root}/hardware/pcie_datalink_layer/src/dllp/pcie_datalink_layer.sv",
+
+  # --- PCIe: integration glue (transaction layer + CSR + PHY stub) ---
+  "${araxl_root}/hardware/src/pcie/pcie_phy_stub.sv",
+  "${araxl_root}/hardware/src/pcie/pcie_csr.sv",
+  "${araxl_root}/hardware/src/pcie/pcie_tlp_axi_bridge.sv",
+
+  # --- AraXL: chip top with PCIe stack ---
+  "${araxl_root}/hardware/src/ara_chip.sv",
+
+  # Flat behavioral L2 model (RTL_BEHAVIORAL_SIM path only; ignored in synthesis)
+  "${araxl_root}/hardware/src/ara_l2_sim.sv",
   # Hammer top: fixes NrLanes=4, NrClusters=2 for Genus (see cfg.yml top_module)
   "${araxl_chip_cfg}/ara_soc_syn.sv",
 ]

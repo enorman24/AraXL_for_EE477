@@ -27,3 +27,6 @@
 [submodule "hardware/deps/verilog-pcie"]
 	path = hardware/verilog-pcie
 	url = https://github.com/alexforencich/verilog-pcie.git
+[submodule "hardware/pcie_datalink_layer"]
+	path = hardware/pcie_datalink_layer
+	url = https://github.com/enorman24/pcie_datalink_layer.git
